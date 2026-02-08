@@ -3,7 +3,7 @@
 Este archivo solo contiene ingreso de datos. Los calculos estan en
 `Laboratorio_1_proctor_modificado_metodo_c.py`.
 
-Nomenclatura corta usada:
+Nomenclatura usada:
 - W: masa/peso
 - M: muestra principal compactada en molde
 - m: submuestra pequena para humedad en horno
@@ -96,18 +96,17 @@ def cargar_datos_laboratorio() -> dict:
     puntos = [
         PuntoCompactacion(
             nombre="Punto 1",
-            humedad_objetivo_pct=2.0,
+            humedad_objetivo_pct= 2.0,
             masa_muestra_inicial_g=5000.0,
             agua_adicionada_g=100.0,
             WM=MasaHumedaWM(
                 Wb_g=6040.0,
                 Wb_WMh_g=10400.0,
             ),
-            # 1051.1 g (aprox); confirmar valor
             Wm=MasaSecaWm(
                 Wr_g=254.7,
                 Wr_Wmh_g=1051.1,
-                Wr_Wms_g=None,
+                Wr_Wms_g=1028.1,
             ),
         ),
         PuntoCompactacion(
@@ -122,7 +121,7 @@ def cargar_datos_laboratorio() -> dict:
             Wm=MasaSecaWm(
                 Wr_g=252.7,
                 Wr_Wmh_g=878.5,
-                Wr_Wms_g=None,
+                Wr_Wms_g=849.1,
             ),
         ),
         PuntoCompactacion(
@@ -131,13 +130,13 @@ def cargar_datos_laboratorio() -> dict:
             masa_muestra_inicial_g=5000.0,
             agua_adicionada_g=250.0,
             WM=MasaHumedaWM(
-                Wb_g=None,
-                Wb_WMh_g=None,
+                Wb_g=6040,
+                Wb_WMh_g=10820,
             ),
             Wm=MasaSecaWm(
-                Wr_g=None,
-                Wr_Wmh_g=None,
-                Wr_Wms_g=None,
+                Wr_g=190.6,
+                Wr_Wmh_g=843.3,
+                Wr_Wms_g=808.3,
             ),
         ),
         PuntoCompactacion(
@@ -146,13 +145,13 @@ def cargar_datos_laboratorio() -> dict:
             masa_muestra_inicial_g=5000.0,
             agua_adicionada_g=350.0,
             WM=MasaHumedaWM(
-                Wb_g=None,
-                Wb_WMh_g=None,
+                Wb_g=6040,
+                Wb_WMh_g=11030,
             ),
             Wm=MasaSecaWm(
-                Wr_g=None,
-                Wr_Wmh_g=None,
-                Wr_Wms_g=None,
+                Wr_g=251.9,
+                Wr_Wmh_g=962.2,
+                Wr_Wms_g= 911.9,
             ),
         ),
     ]

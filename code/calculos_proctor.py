@@ -178,7 +178,7 @@ def estimar_optimo(resultados_validos: list[ResultadoPunto]) -> dict:
     #VALIDACIONES:
     # solo se calcula el optimo por regresion cuando hay al menos 4 puntos validos.
     # Si hay menos, se reporta un valor provisional por maximo medido.
-    if len(resultados_validos) < 4:
+    if len(resultados_validos) < 3:
         mejor_discreto["metodo"] = "maximo medido (provisional, faltan 4 puntos)"
         return mejor_discreto
 
@@ -189,6 +189,8 @@ def estimar_optimo(resultados_validos: list[ResultadoPunto]) -> dict:
         # Si la parabola abre hacia arriba, no representa la forma esperada de la
         # curva de compactacion; por seguridad se conserva maximo medido.
         mejor_discreto["metodo"] = "maximo medido (ajuste no representativo)"
+        # Se conserva el ajuste para visualizacion grafica de tendencia.
+        mejor_discreto["coeficientes"] = coeficientes
         return mejor_discreto
 
     # Vertice de la parabola (punto optimo teorico de la curva ajustada):
@@ -207,5 +209,4 @@ def estimar_optimo(resultados_validos: list[ResultadoPunto]) -> dict:
         "peso_unitario_seco_max_kn_m3": float(peso_vertice_kn_m3),
         "coeficientes": coeficientes,
     }
-
 

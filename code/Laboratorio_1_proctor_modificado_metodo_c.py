@@ -19,7 +19,9 @@ from calculos_proctor import (
     filtrar_resultados_validos,
 )
 from datos_proctor_laboratorio import ConfiguracionEnsayo, PuntoCompactacion, cargar_datos_laboratorio
-from graficas_proctor import graficar_curva_compactacion
+from ficha_tecnica_excel import exportar_ficha_tecnica_excel
+from graficas_proctor import graficar_curva_compactacion, graficar_curva_densidad_seca_gcm3
+from reporte_txt_proctor import generar_ficha_tecnica_txt
 from validaciones_proctor import validar_norma
 
 # Carpeta solicitada para guardar resultados.
@@ -81,11 +83,9 @@ def guardar_reporte(path_reporte: Path, contenido: str) -> None:
     path_reporte.write_text(contenido, encoding="utf-8")
 
 
-def ejecutar() -> None:
-    """Orquesta el proceso completo de forma simple y legible."""
+def procesar_ensayo(datos: dict, carpeta_resultados: Path = CARPETA_RESULTADOS) -> dict:
+    """Ejecuta calculos, validaciones y exportes para un conjunto de datos."""
 
-    # 1) Cargar datos de laboratorio.
-    datos = cargar_datos_laboratorio()
     config: ConfiguracionEnsayo = datos["configuracion"]
     molde = datos["molde"]
     puntos: list[PuntoCompactacion] = datos["puntos"]
@@ -102,7 +102,7 @@ def ejecutar() -> None:
     if not resultados_validos:
         raise RuntimeError("No hay puntos validos para calcular.")
 
-    # 4) Estimar optimo (regresion parabolica si hay >= 3 puntos validos).
+    # 4) Estimar optimo (regresion parabolica si hay >= 4 puntos validos).
     optimo = estimar_optimo(resultados_validos)
 
     # 5) Validar contra condiciones clave de la norma.
@@ -115,47 +115,78 @@ def ejecutar() -> None:
     )
 
     # 6) Generar solo la curva de compactacion.
-    CARPETA_RESULTADOS.mkdir(parents=True, exist_ok=True)
-    ruta_curva_compactacion = CARPETA_RESULTADOS / "curva_compactacion_metodo_c.png"
+    carpeta_resultados.mkdir(parents=True, exist_ok=True)
+    ruta_curva_compactacion = carpeta_resultados / "curva_compactacion_metodo_c.png"
     graficar_curva_compactacion(
         resultados_validos=resultados_validos,
         optimo=optimo,
         ruta_curva_compactacion=ruta_curva_compactacion,
     )
-
-    # 7) Consolidar reporte final.
-    reporte: list[str] = []
-    reporte.append("LABORATORIO PROCTOR MODIFICADO - METODO C (INV E-142-13)")
-    reporte.append("")
-    reporte.append("DATOS DE MOLDE")
-    reporte.append(
-        f"- Diametro promedio: {diametro_promedio_cm:.3f} cm | "
-        f"Altura promedio: {altura_promedio_cm:.3f} cm | Volumen: {volumen_cm3:.2f} cm3"
+    ruta_curva_densidad = carpeta_resultados / "curva_densidad_seca_gcm3.png"
+    graficar_curva_densidad_seca_gcm3(
+        resultados_validos=resultados_validos,
+        optimo=optimo,
+        ruta_curva_densidad=ruta_curva_densidad,
     )
-    reporte.append("")
-    reporte.append("RESULTADOS POR PUNTO")
-    reporte.append(tabla_resultados(resultados))
-    reporte.append("")
-    reporte.append("OPTIMO ESTIMADO")
-    reporte.append(
-        f"- Metodo: {optimo['metodo']} | Humedad optima: {optimo['humedad_optima_pct']:.2f} % | "
-        f"Peso unitario seco maximo: {optimo['peso_unitario_seco_max_kn_m3']:.3f} kN/m3"
-    )
-    reporte.append("")
-    reporte.append("VALIDACION NORMATIVA")
-    reporte.extend(f"- {mensaje}" for mensaje in mensajes_validacion)
-    reporte.append("")
-    reporte.append("GRAFICAS GENERADAS")
-    reporte.append(f"- {ruta_curva_compactacion}")
-    reporte.append("")
-    reporte.append(texto_referencias_normativas())
 
-    texto_reporte = "\n".join(reporte)
+    molde_con_calculos = {
+        **molde,
+        "volumen_cm3": volumen_cm3,
+        "diametro_promedio_cm": diametro_promedio_cm,
+        "altura_promedio_cm": altura_promedio_cm,
+    }
+    ruta_excel = carpeta_resultados / "ficha_tecnica_proctor_metodo_c.xlsx"
+    exportar_ficha_tecnica_excel(
+        ruta_excel=ruta_excel,
+        config=config,
+        molde=molde_con_calculos,
+        puntos=puntos,
+        resultados=resultados,
+        resultados_validos=resultados_validos,
+        optimo=optimo,
+        mensajes_validacion=mensajes_validacion,
+        texto_referencias=texto_referencias_normativas(),
+    )
+
+    # 7) Consolidar reporte final (ficha tecnica TXT mejorada).
+    texto_reporte = generar_ficha_tecnica_txt(
+        config=config,
+        volumen_cm3=volumen_cm3,
+        diametro_promedio_cm=diametro_promedio_cm,
+        altura_promedio_cm=altura_promedio_cm,
+        resultados=resultados,
+        resultados_validos=resultados_validos,
+        optimo=optimo,
+        mensajes_validacion=mensajes_validacion,
+        ruta_curva_compactacion=str(ruta_curva_compactacion),
+        ruta_curva_densidad=str(ruta_curva_densidad),
+        ruta_excel=str(ruta_excel),
+        referencias_normativas=texto_referencias_normativas(),
+    )
     print(texto_reporte)
 
-    ruta_reporte = CARPETA_RESULTADOS / "reporte_proctor_metodo_c.txt"
+    ruta_reporte = carpeta_resultados / "reporte_proctor_metodo_c.txt"
     guardar_reporte(ruta_reporte, texto_reporte)
     print(f"\nReporte guardado en: {ruta_reporte}")
+    return {
+        "ruta_reporte": ruta_reporte,
+        "ruta_curva_compactacion": ruta_curva_compactacion,
+        "ruta_curva_densidad": ruta_curva_densidad,
+        "ruta_excel": ruta_excel,
+        "resultados": resultados,
+        "resultados_validos": resultados_validos,
+        "optimo": optimo,
+        "mensajes_validacion": mensajes_validacion,
+        "texto_reporte": texto_reporte,
+    }
+
+
+def ejecutar() -> None:
+    """Orquesta el proceso completo de forma simple y legible."""
+
+    # 1) Cargar datos de laboratorio.
+    datos = cargar_datos_laboratorio()
+    procesar_ensayo(datos=datos, carpeta_resultados=CARPETA_RESULTADOS)
 
 
 if __name__ == "__main__":

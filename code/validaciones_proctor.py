@@ -88,4 +88,29 @@ def validar_norma(
     else:
         mensajes.append("INFO no se valida saturacion porque no hay gravedad especifica (Gs).")
 
+    # Verificaciones de consistencia de calculo (INV 8.2.2, 8.2.3 y 8.2.4).
+    inconsistencias = 0
+    for r in resultados_validos:
+        if r.humedad_usada_pct is not None and r.humedad_usada_pct < 0:
+            inconsistencias += 1
+        if (
+            r.densidad_humeda_g_cm3 is not None
+            and r.densidad_seca_g_cm3 is not None
+            and r.densidad_seca_g_cm3 > r.densidad_humeda_g_cm3 + 1e-9
+        ):
+            inconsistencias += 1
+        if (
+            r.peso_unitario_humedo_kn_m3 is not None
+            and r.peso_unitario_seco_kn_m3 is not None
+            and r.peso_unitario_seco_kn_m3 > r.peso_unitario_humedo_kn_m3 + 1e-9
+        ):
+            inconsistencias += 1
+
+    if inconsistencias == 0:
+        mensajes.append("OK consistencia interna de calculos verificada (8.2.2 a 8.2.4).")
+    else:
+        mensajes.append(
+            f"ALERTA se detectaron {inconsistencias} inconsistencia(s) internas en calculos; revisar datos de entrada."
+        )
+
     return mensajes
